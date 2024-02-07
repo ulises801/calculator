@@ -1,68 +1,113 @@
-let screen = document.getElementById("screen"),
-  keypad = document.getElementById("keypad"),
-  buttons = keypad.getElementsByTagName("button"),
-  operations = document.getElementById("operations"),
-  operationButtons = operations.getElementsByTagName("button"),
-  equal = document.getElementById("equal"),
-  clear = document.getElementById("clear"),
-  firstNumber,
-  operator = "",
-  secondNumber,
-  result;
-
-//llenar input con digitos y .
-for (let i = 0; i < buttons.length; i++) {
-  buttons[i].onclick = function () {
-    screen.value = screen.value + this.innerHTML;
-  };
-}
-
-//botones de operacion
-for (let i = 0; i < operationButtons.length; i++) {
-  operationButtons[i].onclick = function () {
-    if (operator !== "") {
-      operate();
-    }
-    firstNumber = screen.value;
-    operator = this.innerHTML;
-    screen.value = "";
-  };
-}
-
-//CE
-clear.onclick = function () {
-  screen.value = "";
-  operator = "";
-  firstNumber = 0;
-  secondNumber = 0;
-  result = 0;
+// Object Values
+const calculator = {
+  displayValue: "0",
+  firstOperand: null,
+  waitingForSecondOperand: false,
+  operator: null,
 };
 
-//=
-equal.onclick = function () {
-  if (operator !== "") {
-    operate();
+// Display
+
+const updateDisplay = () => {
+  const display = document.querySelector(".screen");
+  display.value = calculator.displayValue;
+};
+
+updateDisplay();
+
+// Handle key press
+const keys = document.querySelector(".keys");
+keys.addEventListener("click", (event) => {
+  const { target } = event;
+  if (!target.matches("button")) {
+    return;
+  }
+  if (target.classList.contains("operator")) {
+    handleOperator(target.value);
+    updateDisplay();
+    return;
+  }
+  if (target.classList.contains("decimal")) {
+    inputDecimal(target.value);
+    updateDisplay();
+    return;
+  }
+  if (target.classList.contains("all-clear")) {
+    resetCalculator();
+    updateDisplay();
+    return;
+  }
+
+  inputDigit(target.value);
+  updateDisplay();
+});
+
+// Input digit
+
+const inputDigit = (digit) => {
+  const { displayValue, waitingForSecondOperand } = calculator;
+
+  if (waitingForSecondOperand === true) {
+    calculator.displayValue = digit;
+    calculator.waitingForSecondOperand = false;
+  } else {
+    calculator.displayValue =
+      displayValue === "0" ? digit : displayValue + digit;
   }
 };
 
-//operacion
-function operate() {
-  secondNumber = screen.value;
-  switch (operator) {
-    case "+":
-      result = parseFloat(firstNumber) + parseFloat(secondNumber);
-      break;
-    case "-":
-      result = parseFloat(firstNumber) - parseFloat(secondNumber);
-      break;
-    case "*":
-      result = parseFloat(firstNumber) * parseFloat(secondNumber);
-      break;
-    case "/":
-      result = parseFloat(firstNumber) / parseFloat(secondNumber);
-      break;
+// Input Decimal
+const inputDecimal = (dot) => {
+  if (calculator.waitingForSecondOperand === true) {
+    calculator.displayValue = "0.";
+    calculator.waitingForSecondOperand = false;
+    return;
   }
-  screen.value = result;
-  firstNumber = result.toString();
-  operator = "";
-}
+  if (!calculator.displayValue.includes(dot)) {
+    calculator.displayValue += dot;
+  }
+};
+
+// Handle Operators
+const handleOperator = (nextOperator) => {
+  const { firstOperand, displayValue, operator } = calculator;
+  const inputValue = parseFloat(displayValue);
+
+  if (operator && calculator.waitingForSecondOperand) {
+    calculator.operator = nextOperator;
+    return;
+  }
+  if (firstOperand == null && !isNaN(inputValue)) {
+    calculator.firstOperand = inputValue;
+  } else if (operator) {
+    const result = calculate(firstOperand, inputValue, operator);
+
+    calculator.displayValue = `${parseFloat(result.toFixed(7))}`;
+    calculator.firstOperand = result;
+  }
+
+  calculator.waitingForSecondOperand = true;
+  calculator.operator = nextOperator;
+};
+
+// Calculate logic
+const calculate = (firstOperand, secondOperand, operator) => {
+  if (operator === "+") {
+    return firstOperand + secondOperand;
+  } else if (operator === "-") {
+    return firstOperand - secondOperand;
+  } else if (operator === "*") {
+    return firstOperand * secondOperand;
+  } else if (operator === "/") {
+    return firstOperand / secondOperand;
+  }
+  return secondOperand;
+};
+
+// Reset calculator
+const resetCalculator = () => {
+  calculator.displayValue = "0";
+  calculator.firstOperand = null;
+  calculator.waitingForSecondOperand = false;
+  calculator.operator = null;
+};
